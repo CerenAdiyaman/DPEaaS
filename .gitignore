@@ -4,6 +4,3 @@ dist
 build
 .vscode
 
-touch .gitattributes
-*.log
-*.env

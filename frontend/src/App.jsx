@@ -24,7 +24,7 @@ function App() {
     if (!repoUrl) return alert('Please enter a GitHub repository URL');
 
     try {
-      const res = await axios.post('http://localhost:8080/generate-preview', {
+      const res = await axios.post('http://localhost:8080/connect-repo', {
         repoUrl,
         token,
       });

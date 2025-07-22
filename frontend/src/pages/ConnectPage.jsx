@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import githubLogo from "../assets/social.png"; 
 
 function ConnectPage() {
   const [repoUrl, setRepoUrl] = useState("");
@@ -19,62 +20,79 @@ function ConnectPage() {
       localStorage.setItem("token", token);
       localStorage.setItem("prs", JSON.stringify(res.data));
 
-      navigate("/create");
+      navigate("/preview");
     } catch (err) {
-      console.error("Bağlantı hatası:", err);
+      console.error("Connection error:", err);
       alert("Bağlantı kurulamadı veya PR listesi çekilemedi.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-    </div>
-      <div className="bg-[#0d1117] text-white w-full max-w-md space-y-8">
-        <div className="flex items-center justify-center space-x-3">
-          <h1 className="text-xl font-semibold">Connect to Repo</h1>
-        </div>
+<div className="min-h-screen flex items-center justify-center bg-[#0d1117] px-4 -mt-20 " >
+  <div className="flex flex-col items-center bg-[#161b22] px-12 py-12 rounded-xl shadow-md border border-[#30363d] w-[800px] h-[500px]  space-y-12" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    {/* Logo */}
+    <img src={githubLogo} alt="GitHub" className="w-12 h-12 max-w-[12rem] max-h-[12rem] object-contain" />
+    
+    {/* Başlık */}
+  <h1 className="text-white text-[36px] font-bold text-center whitespace-nowrap">
+    Connect to Your Repository
+  </h1>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleConnect();
-          }}
-          className="space-y-5"
-        >
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              GitHub Repository URL
-            </label>
-            <input
-              type="text"
-              value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
-              placeholder="https://github.com/username/repo"
-              className="w-full p-3 rounded-md bg-[#161b22] border border-gray-600 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
 
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">GitHub Token</label>
-            <input
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="••••••••"
-              className="w-full p-3 rounded-md bg-[#161b22] border border-gray-600 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-md font-medium transition"
-          >
-            Connect
-          </button>
-        </form>
+    {/* Form */}
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleConnect();
+      }}
+      className="flex flex-col items-center space-y-12"
+      style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: "1px",         // ← Aradaki boşluk (20px) burada
+    alignItems: "center" // opsiyonel: öğeleri yatayda ortalamak için
+  }}
+    >
+      {/* Repo URL */}
+      <div>
+        <label className="w-[360px] text-white mb-1 block">
+          GitHub Repository URL
+        </label>
+        <input
+          type="text"
+          value={repoUrl}
+          onChange={(e) => setRepoUrl(e.target.value)}
+          placeholder="https://github.com/username/repo"
+          className="w-[360px] px-3 py-2 rounded-md border border-[#30363d] bg-[#0d1117] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
-    </div>
+
+      {/* Token */}
+      <div>
+        <label className="text-sm text-white mb-1 block">
+          GitHub Token
+        </label>
+        <input
+          type="password"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder="••••••••"
+          className="w-[360px] px-3 py-2 rounded-md border border-[#30363d] bg-[#0d1117] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>  
+
+      {/* Button */}
+      <button
+        type="submit"
+         className="mt-20 w-[160px] bg-[#238636] hover:bg-[#2ea043] text-white py-2 rounded-md text-[12px] font-semibold transition"
+      >
+        Connect
+      </button>
+    </form>
+  </div>
+</div>
+
+
   );
 }
 

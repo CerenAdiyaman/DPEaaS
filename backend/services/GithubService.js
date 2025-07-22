@@ -1,18 +1,27 @@
 const axios = require('axios');
 
-exports.fetchPRs = async (repoUrl, token) => {
+exports.connectAndFetch = async (repoUrl, token) => {
   const [owner, repo] = repoUrl.replace('https://github.com/', '').split('/');
-  if (!owner || !repo) throw new Error('Invalid repo URL');
+  console.log("Connecting to repo:", { owner, repo });
 
   const headers = token ? {
     Authorization: `Bearer ${token}`,
     Accept: 'application/vnd.github+json',
   } : {};
 
-  const response = await axios.get(
-    `https://api.github.com/repos/${owner}/${repo}/pulls`,
-    { headers }
-  );
+  const repoRes = await axios.get(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+  console.log("Repo name:", repoRes.data.full_name);
+  console.log("Default branch:", repoRes.data.default_branch);
 
-  return response.data;
+  const prRes = await axios.get(`https://api.github.com/repos/${owner}/${repo}/pulls`, { headers });
+  console.log("PR count:", prRes.data.length);
+
+  return {
+    repository: repoRes.data.full_name,
+    default_branch: repoRes.data.default_branch,
+    pullRequests: prRes.data.map(pr => ({
+      url: pr.html_url,
+      title: pr.title
+    }))
+  };
 };

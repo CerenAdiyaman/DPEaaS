@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import githubLogo from "../assets/social.png"; 
+import logo from "../assets/SnekHub.png"; 
 
 function ConnectPage() {
   const [repoUrl, setRepoUrl] = useState("");
@@ -29,15 +29,15 @@ function ConnectPage() {
 
   return (
 <div className="min-h-screen flex items-center justify-center bg-[#0d1117] px-4 -mt-20 " >
-  <div className="flex flex-col items-center bg-[#161b22] px-12 py-12 rounded-xl shadow-md border border-[#30363d] w-[800px] h-[500px]  space-y-12" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+  <div className="flex flex-col items-center bg-[#161b22] px-12 py-12 rounded-xl shadow-md border border-[#30363d] w-[800px] h-[500px]  space-y-12">
     {/* Logo */}
-    <img src={githubLogo} alt="GitHub" className="w-12 h-12 max-w-[12rem] max-h-[12rem] object-contain" />
+    <img src={logo} alt="GitHub" className="w-12 h-12 max-w-[12rem] max-h-[12rem] object-contain" />
     
     {/* Başlık */}
-  <h1 className="text-white text-[36px] font-bold text-center whitespace-nowrap">
-    Connect to Your Repository
-  </h1>
-
+    <h1 className="text-white text-[36px] font-bold text-center leading-tight">
+      <div>SnekHub</div>
+      <div className="text-[24px] font-normal">Connect to Your Repository </div>
+    </h1>
 
     {/* Form */}
     <form

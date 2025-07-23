@@ -4,42 +4,41 @@ import { FiFileText } from "react-icons/fi";
 import CreateModal from "../components/CreateModal.jsx";
 
 function PreviewsPage() {
-  const [previews, setPreviews] = useState([
-    "https://example.com/preview1",
-    "https://example.com/preview2",
-    "https://example.com/preview3",
-    "https://example.com/preview4",
-  ]);
+  const [previews, setPreviews] = useState([]);
   const [repoName, setRepoName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [prList, setPrList] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const repoUrl = localStorage.getItem("repoUrl");
-    const prsRaw = localStorage.getItem("prs");
+    const previewsRaw = localStorage.getItem("newPreview"); 
 
     if (repoUrl) setRepoName(repoUrl.split("/").pop() || "");
-    if (prsRaw) {
+
+    if (previewsRaw) {
       try {
-        const parsed = JSON.parse(prsRaw);
-        setPrList(parsed.pullRequests || []);
+        const parsed = JSON.parse(previewsRaw); 
+        setPreviews(parsed); 
       } catch (e) {
-        console.error("Failed to parse PR list:", e);
+        console.error("Failed to parse created previews:", e);
       }
     }
   }, []);
 
 
   const handleDelete = (i) => {
-    setPreviews((prev) => prev.filter((_, idx) => idx !== i));
+    const updated = previews.filter((_, idx) => idx !== i);
+    setPreviews(updated);
+    localStorage.setItem("newPreview", JSON.stringify(updated));
   };
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  const handleCreate = (newUrl) => {
-    setPreviews((prev) => [newUrl, ...prev]);
+  const handleCreate = (newPreview) => {
+    const updated = [newPreview, ...previews];
+    setPreviews(updated);
+    localStorage.setItem("newPreview", JSON.stringify(updated)); 
     closeModal();
   };
 
@@ -71,7 +70,7 @@ function PreviewsPage() {
           </div>
 
           <div className="divide-y divide-[#30363d]">
-            {previews.map((url, idx) => (
+            {previews.map((preview, idx) => (
               <div
                 key={idx}
                 className="group flex items-center justify-between px-6 py-4 hover:bg-[#21262d] transition-all duration-200"
@@ -81,12 +80,12 @@ function PreviewsPage() {
                     <FiFileText className="text-blue-400 w-5 h-5" />
                   </div>
                   <a
-                    href={url}
+                    href={preview.url}
                     target="_blank"
                     rel="noreferrer"
                     className="text-blue-400 hover:text-blue-300 hover:underline truncate flex-1"
                   >
-                    {url}
+                    {preview.previewName}
                   </a>
                 </div>
                 <button
@@ -121,8 +120,10 @@ function PreviewsPage() {
         isOpen={isModalOpen}
         onClose={closeModal}
         onSubmit={handleCreate}
-        prList={prList}
       />
+
+
+
     </div>
   );
 }

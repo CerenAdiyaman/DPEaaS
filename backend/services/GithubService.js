@@ -21,6 +21,12 @@ function cloneRepo(repoUrl, owner, repo) {
   return repoPath;
 }
 
+function pullPRinBranch(repoPath, prNumber) {
+  console.log(`Pulling PR #${prNumber} in branch`);
+  execSync(`git -C ${repoPath} fetch origin pull/${prNumber}/head:pr-${prNumber}`, { stdio: 'inherit' });
+  execSync(`git -C ${repoPath} checkout pr-${prNumber}`, { stdio: 'inherit' });
+}
+
 // @brief Connecting github repo and cloning if not exists - also fetches repo details 
 exports.connectAndFetch = async (repoUrl, token) => {
   const [owner, repo] = repoUrl.replace('https://github.com/', '').split('/');
@@ -31,23 +37,28 @@ exports.connectAndFetch = async (repoUrl, token) => {
     Accept: 'application/vnd.github+json',
   } : {};
 
-  //We need to clone the repo if it doesn't exist
-  const localPath = cloneRepo(repoUrl, owner, repo);
+  let localPath = path.join(__dirname, '..', 'repos', `${owner}-${repo}`);
+  if (!isRepoCloned(owner, repo)) {
+    console.log(`Repository ${owner}/${repo} is not cloned. Cloning now...`);
+    localPath = cloneRepo(repoUrl, owner, repo);
+  } else {
+    console.log(`Repository ${owner}/${repo} is already cloned.`);
+  }
 
-  // Fetch repository details
   const repoRes = await axios.get(`https://api.github.com/repos/${owner}/${repo}`, { headers });
-  console.log("Repo name:", repoRes.data.full_name);
-  console.log("Default branch:", repoRes.data.default_branch);
-
   const prRes = await axios.get(`https://api.github.com/repos/${owner}/${repo}/pulls`, { headers });
-  console.log("PR count:", prRes.data.length);
 
   return {
     repository: repoRes.data.full_name,
     default_branch: repoRes.data.default_branch,
+    localPath: localPath,  // Bunu ekle
     pullRequests: prRes.data.map(pr => ({
       url: pr.html_url,
       title: pr.title
     }))
   };
 };
+
+
+exports.pullPRinBranch = pullPRinBranch;
+

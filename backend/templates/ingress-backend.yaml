@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-{{prNumber}}
+  namespace: {{namespace}}
+spec:
+  rules:
+    - host: preview.local
+      http:
+        paths:
+          -path: /pr-{{prNumber}}/backend
+          pathType: Prefix
+          backend:
+            service:
+              name: backend-service-{{prNumber}}
+              port:
+                number: 80

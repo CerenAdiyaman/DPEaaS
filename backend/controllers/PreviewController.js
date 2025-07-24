@@ -8,6 +8,18 @@ exports.createPreview = async (req, res) => {
     
         // Fetch repository details
         const repoDetails = await githubService.connectAndFetch(repoUrl, token);
+
+        if (!repoDetails.localPath) {
+            return res.status(400).json({ error: 'Repository path not found' });    
+        }
+        console.log("Repository details:", repoDetails);
+        // Check if the PR number is provided
+        if (!prNumber) {
+            return res.status(400).json({ error: 'Pull request number is required' });
+        }
+
+        // Check if the PR branch is already pulled
+        await githubService.pullPRinBranch(repoDetails.localPath, prNumber);
         
         // Create Kubernetes resources
         const k8sResponse = await KubernetesService.createPreview(repoDetails, prNumber);

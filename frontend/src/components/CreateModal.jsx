@@ -18,21 +18,57 @@ function CreateModal({ isOpen, onClose, onSubmit }) {
     }
   }, []);
 
+
 const handleSubmit = () => {
   if (!selectedPr) return alert("Lütfen bir PR seçin.");
 
-  // Preview objesini oluştur
   const selected = prs.find(pr => pr.url === selectedPr);
   if (!selected) return alert("Seçilen PR bulunamadı.");
 
-  const newPreview = {
-    url: selected.url,
-    previewName: selected.previewName || selected.title || "Unnamed PR",
+  // localStorage'dan gerekli bilgileri al
+  const repoUrl = localStorage.getItem("repoUrl");
+  const token = localStorage.getItem("token");
+
+  if (!repoUrl || !token) {
+    return alert("repoUrl veya token eksik. Lütfen repo bağlantısı yapın.");
+  }
+
+  // PR numarasını URL'den çıkar
+  const prNumber = selected.url.split("/").pop();
+
+  // Backend'in beklediği formatta veri hazırla
+  const payload = {
+    repoUrl,
+    token,
+    prNumber
   };
 
-  localStorage.setItem("selectedPr", JSON.stringify(newPreview)); 
-  onSubmit(newPreview); 
+
+  fetch("http://localhost:8080/create-preview/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Backend error");
+      return res.json();
+    })
+    .then(() => {
+      // Başarılıysa localStorage'a kaydet ve UI'ı güncelle
+      localStorage.setItem("selectedPr", JSON.stringify({
+        url: selected.url,
+        previewName: selected.previewName || selected.title || "Unnamed PR",
+      }));
+      onSubmit(selected);
+    })
+    .catch((err) => {
+      console.error("Backend'e istek atılamadı:", err);
+      alert("Preview oluşturulamadı.");
+    });
 };
+
 
   if (!isOpen) return null;
 

@@ -5,6 +5,12 @@ const util = require('util');
 const execAsync = util.promisify(exec);
 const path = require('path');
 
+// Test mode - gerçek Docker/Kubernetes komutlarını atla
+// Development'ta varsayılan olarak test mode aktif
+const TEST_MODE = process.env.TEST_MODE !== 'false'; // Sadece açıkça false olduğunda gerçek modu kullan
+
+console.log(`🔧 DPEaaS starting in ${TEST_MODE ? 'TEST' : 'PRODUCTION'} mode`);
+
 // @brief Function to load a YAML template and replace placeholders with actual data
 // @param {string} templateName - Name of the template file
 // @param {Object} data - Data to replace in the template
@@ -157,6 +163,32 @@ exports.createPreview = async (repoDetails, prNumber) => {
     const hostname = `pr-${prNumber}.dpeaas.local`;
 
     try{
+        console.log("Creating preview for PR:", prNumber);
+        
+        if (TEST_MODE) {
+            console.log("🧪 TEST MODE: Simulating Kubernetes deployment...");
+            
+            // Simulate a delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            console.log(`✅ [SIMULATED] Namespace ${namespace} created`);
+            console.log(`✅ [SIMULATED] Docker images built and pushed`);
+            console.log(`✅ [SIMULATED] Kubernetes resources deployed`);
+            
+            return {
+                status: 'success',
+                message: `Preview created for PR ${prNumber} (SIMULATED)`,
+                previewUrl: `http://localhost:3001/pr-${prNumber}`, // Mock preview server URL
+                resources: {
+                    namespace,
+                    deployment: `deployment-${prNumber}`,
+                    service: `service-${prNumber}`
+                },
+                mode: 'test'
+            };
+        }
+
+        // Real deployment code (original)
         console.log("Creating Kubernetes namespace for PR:", prNumber);
         await execAsync(`kubectl create namespace ${namespace}`);
         console.log(`Namespace ${namespace} created successfully`);
@@ -185,6 +217,7 @@ exports.createPreview = async (repoDetails, prNumber) => {
         return{
             status: 'success',
             message: `Preview created for PR ${prNumber}`,
+            previewUrl: `http://${hostname}`,
             resources: {
                 namespace,
                 deployment: `deployment-${prNumber}`,
@@ -200,6 +233,24 @@ exports.createPreview = async (repoDetails, prNumber) => {
 
 exports.deletePreview = async (prNumber) => {
     try {
+        if (TEST_MODE) {
+            console.log(`🧪 TEST MODE: Simulating deletion of PR ${prNumber}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`✅ [SIMULATED] Preview deleted for PR ${prNumber}`);
+            
+            return {
+                status: 'success',
+                message: `Preview deleted for PR ${prNumber} (SIMULATED)`,
+                resources: {  
+                    namespace: `pr-${prNumber}`,
+                    deployment: `deployment-${prNumber}`,
+                    service: `service-${prNumber}`
+                },
+                mode: 'test'
+            };
+        }
+
+        // Real deletion code
         console.log("Deleting Kubernetes resources for PR:", prNumber);
         await execAsync(`kubectl delete namespace pr-${prNumber}`);
         console.log(`Namespace pr-${prNumber} deleted successfully`);

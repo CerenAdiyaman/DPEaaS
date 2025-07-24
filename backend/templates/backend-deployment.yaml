@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-deployment
@@ -17,4 +17,4 @@ spec:
         - name: {{app_name}}
           image: {{backend_image}}
           ports:
-            - containerPort: 3000
+            - containerPort: 8080 

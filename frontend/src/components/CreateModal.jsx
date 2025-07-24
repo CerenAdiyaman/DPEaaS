@@ -55,17 +55,25 @@ const handleSubmit = () => {
       if (!res.ok) throw new Error("Backend error");
       return res.json();
     })
-    .then(() => {
+    .then((response) => {
       // Başarılıysa localStorage'a kaydet ve UI'ı güncelle
-      localStorage.setItem("selectedPr", JSON.stringify({
-        url: selected.url,
-        previewName: selected.previewName || selected.title || "Unnamed PR",
-      }));
-      onSubmit(selected);
+      const previewData = {
+        url: response.previewUrl || selected.url,
+        previewName: selected.title || "Unnamed PR",
+        prNumber: prNumber,
+        mode: response.mode || 'production'
+      };
+      
+      localStorage.setItem("selectedPr", JSON.stringify(previewData));
+      
+      // Success message göster
+      alert(`✅ Preview ${response.mode === 'test' ? '(TEST MODE)' : ''} oluşturuldu!\n\nURL: ${previewData.url}\nPR: ${previewData.previewName}`);
+      
+      onSubmit(previewData);
     })
     .catch((err) => {
       console.error("Backend'e istek atılamadı:", err);
-      alert("Preview oluşturulamadı.");
+      alert("Preview oluşturulamadı. Detaylar console'da.");
     });
 };
 

@@ -9,7 +9,6 @@ app.use(express.json());
 
 app.use('/connect-repo', repoRoutes);
 
-// EKLE BUNU
 const PORT = 8080;
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);

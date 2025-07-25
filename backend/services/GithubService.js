@@ -23,8 +23,18 @@ function cloneRepo(repoUrl, owner, repo) {
 
 function pullPRinBranch(repoPath, prNumber) {
   console.log(`Pulling PR #${prNumber} in branch`);
-  execSync(`git -C ${repoPath} fetch origin pull/${prNumber}/head:pr-${prNumber}`, { stdio: 'inherit' });
-  execSync(`git -C ${repoPath} checkout pr-${prNumber}`, { stdio: 'inherit' });
+try {
+  execSync(`git -C ${repoPath} branch -D pr-${prNumber}`, { stdio: 'inherit' });
+  console.log(`Deleted existing branch pr-${prNumber}`);
+} catch (e) {
+  // dal yoksa boşver
+  console.log(`Branch pr-${prNumber} does not exist, continuing...`);
+}
+execSync(`git -C ${repoPath} checkout main`, { stdio: 'inherit' });
+execSync(`git -C ${repoPath} fetch origin pull/${prNumber}/head:pr-${prNumber}`, { stdio: 'inherit' });
+execSync(`git -C ${repoPath} checkout pr-${prNumber}`, { stdio: 'inherit' });
+  console.log(`Checked out PR #${prNumber} in branch pr-${prNumber}`);
+
 }
 
 // @brief Connecting github repo and cloning if not exists - also fetches repo details 
@@ -51,7 +61,7 @@ exports.connectAndFetch = async (repoUrl, token) => {
   return {
     repository: repoRes.data.full_name,
     default_branch: repoRes.data.default_branch,
-    localPath: localPath,  // Bunu ekle
+    localPath: localPath, 
     pullRequests: prRes.data.map(pr => ({
       url: pr.html_url,
       title: pr.title

@@ -5,13 +5,13 @@ metadata:
   namespace: {{namespace}}
 spec:
   rules:
-    - host: preview.local
+    - host: {{hostname}}
       http:
         paths:
-          -path: /pr-{{prNumber}}/backend
-          pathType: Prefix
-          backend:
-            service:
-              name: backend-service-{{prNumber}}
-              port:
-                number: 80
+          - path: /pr-{{prNumber}}-{{namespace}}/backend
+            pathType: Prefix
+            backend:
+              service:
+                name: {{service_name}}
+                port:
+                  number: 80

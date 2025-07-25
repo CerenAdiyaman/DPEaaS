@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText } from "react-icons/fi";
+import { FiFileText, FiPlusCircle, FiTrash2 } from "react-icons/fi";
 import CreateModal from "../components/CreateModal.jsx";
 
 function PreviewsPage() {
@@ -11,20 +11,19 @@ function PreviewsPage() {
 
   useEffect(() => {
     const repoUrl = localStorage.getItem("repoUrl");
-    const previewsRaw = localStorage.getItem("newPreview"); 
+    const previewsRaw = localStorage.getItem("newPreview");
 
     if (repoUrl) setRepoName(repoUrl.split("/").pop() || "");
 
     if (previewsRaw) {
       try {
-        const parsed = JSON.parse(previewsRaw); 
-        setPreviews(parsed); 
+        const parsed = JSON.parse(previewsRaw);
+        setPreviews(parsed);
       } catch (e) {
         console.error("Failed to parse created previews:", e);
       }
     }
   }, []);
-
 
   const handleDelete = (i) => {
     const updated = previews.filter((_, idx) => idx !== i);
@@ -38,78 +37,73 @@ function PreviewsPage() {
   const handleCreate = (newPreview) => {
     const updated = [newPreview, ...previews];
     setPreviews(updated);
-    localStorage.setItem("newPreview", JSON.stringify(updated)); 
+    localStorage.setItem("newPreview", JSON.stringify(updated));
     closeModal();
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white flex items-center justify-center">
-      <div className="w-full max-w-2xl mx-auto px-6">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#0d1117] via-[#161b22] to-[#21262d] flex items-center justify-center px-2 py-8">
+      <div className="w-full max-w-3xl mx-auto px-4 sm:px-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-              <FiFileText size={18} className="text-white" />
-            </div>
-            <h1 className="text-2xl font-bold">
-              Repo: <span className="text-blue-400">{repoName || "Loading..."}</span>
-            </h1>
-          </div>
+        <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow-lg">
+            Repo: <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">{repoName || "Loading..."}</span>
+          </h1>
           <button
             onClick={openModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-green-500 hover:from-green-600 hover:to-blue-600 text-white px-7 py-3 rounded-2xl text-lg font-bold shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
-            Create
+            <FiPlusCircle size={22} /> Create
           </button>
         </div>
 
         {/* Previews Section */}
-        <div className="bg-[#161b22] rounded-lg shadow-xl border border-[#30363d] overflow-hidden">
-          <div className="bg-[#21262d] px-6 py-4 border-b border-[#30363d]">
-            <h2 className="text-lg font-semibold text-white">Previews</h2>
+        <div className="bg-[#161b22]/80 rounded-2xl shadow-2xl border border-[#30363d] overflow-hidden backdrop-blur-md">
+          <div className="bg-[#21262d]/90 px-8 py-5 border-b border-[#30363d] flex items-center">
+            <h2 className="text-2xl font-semibold text-white tracking-wide">Previews</h2>
           </div>
 
           <div className="divide-y divide-[#30363d]">
             {previews.map((preview, idx) => (
               <div
                 key={idx}
-                className="group flex items-center justify-between px-6 py-4 hover:bg-[#21262d] transition-all duration-200"
+                className="group flex items-center justify-between px-8 py-5 hover:bg-[#21262d]/80 transition-all duration-200"
               >
-                <div className="flex items-center space-x-4 flex-1 min-w-0">
+                <div className="flex items-center space-x-5 flex-1 min-w-0">
                   <div className="flex-shrink-0">
-                    <FiFileText className="text-blue-400 w-5 h-5" />
+                    <FiFileText className="text-blue-400 w-7 h-7" />
                   </div>
                   <a
                     href={preview.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-400 hover:text-blue-300 hover:underline truncate flex-1"
+                    className="text-blue-400 hover:text-green-400 hover:underline truncate flex-1 text-lg font-medium transition-colors duration-200"
                   >
                     {preview.previewName}
                   </a>
                 </div>
                 <button
                   onClick={() => handleDelete(idx)}
-                  className="ml-4 text-red-400 hover:text-red-300 px-3 py-1.5 rounded-md transition-all duration-200 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 text-sm"
+                  className="ml-6 flex items-center gap-1 text-red-400 hover:text-white px-4 py-2 rounded-xl transition-all duration-200 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 text-base font-semibold"
                 >
-                  Delete
+                  <FiTrash2 size={18} /> Delete
                 </button>
               </div>
             ))}
             {previews.length === 0 && (
-              <div className="px-6 py-12 text-center">
-                <FiFileText className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No previews available</p>
-                <p className="text-gray-500 text-sm mt-2">Click "Create" to add your first preview</p>
+              <div className="px-8 py-20 text-center flex flex-col items-center justify-center animate-fade-in">
+                <FiFileText className="w-16 h-16 text-gray-500 animate-bounce mb-6" />
+                <p className="text-gray-400 text-2xl font-semibold">No previews available</p>
+                <p className="text-gray-500 text-base mt-2">Click <span className="text-blue-400 font-bold">"Create"</span> to add your first preview</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Stats */}
-        <div className="mt-4 flex justify-center">
-          <div className="bg-[#161b22] rounded-lg px-4 py-2 border border-[#30363d]">
-            <span className="text-gray-400 text-sm">
+        <div className="mt-6 flex justify-center">
+          <div className="bg-[#161b22]/80 rounded-xl px-6 py-3 border border-[#30363d] shadow-md">
+            <span className="text-gray-400 text-lg font-medium">
               {previews.length} preview{previews.length !== 1 ? "s" : ""} available
             </span>
           </div>
@@ -121,9 +115,6 @@ function PreviewsPage() {
         onClose={closeModal}
         onSubmit={handleCreate}
       />
-
-
-
     </div>
   );
 }

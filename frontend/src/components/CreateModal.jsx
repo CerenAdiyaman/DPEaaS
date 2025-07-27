@@ -169,51 +169,81 @@ function CreateModal({ isOpen, onClose, onSubmit }) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.97, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="bg-[#161b22] px-12 py-10 rounded-2xl border border-[#30363d] w-[95vw] max-w-[520px] shadow-xl relative"
+            className="bg-[#161b22] px-24 py-16 rounded-3xl border border-[#30363d] w-[90vw] max-w-[700px] shadow-2xl relative"
             style={{ zIndex: 100000 }}
           >
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-12">
               <h2 className="text-white text-lg font-bold">Select a Pull Request</h2>
               <button
                 onClick={onClose}
                 disabled={loading}
-                className="text-gray-400 hover:text-white text-xl p-1.5 rounded-full transition-colors duration-200 hover:bg-gray-700/30 focus:outline-none disabled:opacity-50"
+                className="text-gray-400 hover:text-white text-xl p-2 rounded-full transition-all duration-200 hover:bg-gray-700/30 focus:outline-none disabled:opacity-50 hover:scale-110"
                 aria-label="Close"
               >
                 <FiX />
               </button>
             </div>
 
-            {/* Dropdown */}
+            {/* Radio Buttons */}
             {prs.length > 0 ? (
-              <select
-                className="w-full px-3 py-2 mb-6 rounded-lg border border-[#30363d] bg-[#0d1117] text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm disabled:opacity-50"
-                value={selectedPr}
-                onChange={(e) => setSelectedPr(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">-- Select PR --</option>
+              <div className="mb-12 space-y-6">
+                <p className="text-[#7d8590] text-sm font-medium mb-6">Select a Pull Request:</p>
                 {prs.map((pr, idx) => (
-                  <option key={idx} value={pr.url} className="text-black">
-                    {pr.previewName || pr.title || `PR ${idx + 1}`}
-                  </option>
+                  <label
+                    key={idx}
+                    className={`flex items-center p-8 px-10 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      selectedPr === pr.url
+                        ? 'border-[#58a6ff] bg-[#58a6ff]/10'
+                        : 'border-[#30363d] bg-[#0d1117] hover:border-[#484f58] hover:bg-[#161b22]'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="prSelection"
+                      value={pr.url}
+                      checked={selectedPr === pr.url}
+                      onChange={(e) => setSelectedPr(e.target.value)}
+                      disabled={loading}
+                      className="sr-only"
+                    />
+                    <div className={`w-8 h-8 rounded-full border-4 flex items-center justify-center mr-10 transition-all duration-200 ${
+                      selectedPr === pr.url
+                        ? 'border-[#58a6ff] bg-[#58a6ff]'
+                        : 'border-[#484f58] bg-transparent'
+                    }`}>
+                      {selectedPr === pr.url && (
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-[#f0f6fc] font-medium text-sm">
+                        {pr.previewName || pr.title || `PR ${idx + 1}`}
+                      </div>
+                      <div className="text-[#7d8590] text-xs mt-3">
+                        {pr.url}
+                      </div>
+                    </div>
+                  </label>
                 ))}
-              </select>
-            ) : (
-              <div className="w-full px-3 py-4 mb-6 rounded-lg border border-[#30363d] bg-[#0d1117] text-center">
-                <p className="text-gray-400 text-sm mb-2">No PRs available</p>
-                <p className="text-gray-500 text-xs">Please connect to a repository first</p>
               </div>
-            )}
+                          ) : (
+                <div className="w-full px-12 py-12 mb-12 rounded-xl border border-[#30363d] bg-[#0d1117] text-center">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#21262d] flex items-center justify-center">
+                    <FiGitPullRequest className="w-10 h-10 text-[#7d8590]" />
+                  </div>
+                  <p className="text-[#f0f6fc] text-sm font-medium mb-3">No PRs available</p>
+                  <p className="text-[#7d8590] text-xs">Please connect to a repository first</p>
+                </div>
+              )}
 
             {/* Button */}
             <button
               onClick={handleSubmit}
               disabled={prs.length === 0 || loading || !selectedPr}
-              className={`w-full py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-md flex items-center justify-center space-x-2 ${
+              className={`w-full py-6 px-8 rounded-xl font-semibold text-sm transition-all duration-200 shadow-lg flex items-center justify-center space-x-4 ${
                 prs.length > 0 && !loading && selectedPr
-                  ? 'bg-[#238636] hover:bg-[#2ea043] text-white' 
+                  ? 'bg-[#238636] hover:bg-[#2ea043] text-white hover:shadow-xl' 
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed'
               }`}
             >

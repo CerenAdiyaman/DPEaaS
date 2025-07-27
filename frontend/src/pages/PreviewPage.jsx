@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiPlusCircle, FiTrash2, FiCheckCircle, FiXCircle, FiRefreshCw, FiExternalLink } from "react-icons/fi";
+import { FiFileText, FiPlusCircle, FiTrash2, FiCheckCircle, FiXCircle, FiRefreshCw, FiExternalLink, FiArrowLeft } from "react-icons/fi";
 import CreateModal from "../components/CreateModal.jsx";
 import TestResultCard from "../components/TestResultCard.jsx";
 
@@ -11,13 +11,17 @@ function PreviewsPage() {
   const [viewMode, setViewMode] = useState("list"); 
   const [testResults, setTestResults] = useState({});
   const [loadingTests, setLoadingTests] = useState({});
+  const [deletingPreviews, setDeletingPreviews] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const repoUrl = localStorage.getItem("repoUrl");
     const previewsRaw = localStorage.getItem("newPreview");
 
-    if (repoUrl) setRepoName(repoUrl.split("/").pop() || "");
+    if (repoUrl) {
+      const repoNameFromUrl = repoUrl.split("/").pop() || "";
+      setRepoName(repoNameFromUrl);
+    }
 
     if (previewsRaw) {
       try {
@@ -57,6 +61,9 @@ function PreviewsPage() {
       return;
     }
     
+    // Loading durumunu başlat
+    setDeletingPreviews(prev => ({ ...prev, [prNumber]: true }));
+    
     try {
       const response = await fetch('http://localhost:8080/create-preview/delete', {
         method: 'DELETE',
@@ -83,6 +90,9 @@ function PreviewsPage() {
     } catch (error) {
       console.error('Delete error:', error);
       alert('❌ Error deleting preview: ' + error.message);
+    } finally {
+      // Loading durumunu bitir
+      setDeletingPreviews(prev => ({ ...prev, [prNumber]: false }));
     }
   };
 
@@ -105,68 +115,82 @@ function PreviewsPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-[#0d1117] via-[#161b22] to-[#21262d] flex items-center justify-center px-2 py-8">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-8">
+    <div className="min-h-screen bg-[#0d1117]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 w-full">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow-lg">
-              Repo: <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">{repoName || "Loading..."}</span>
-            </h1>
-            <p className="text-gray-400 mt-2">Preview environments and test results</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={openModal}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-green-500 hover:from-green-600 hover:to-blue-600 text-white px-7 py-3 rounded-2xl text-lg font-bold shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <FiPlusCircle size={22} /> Create
-            </button>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-[#f0f6fc] mb-1">
+                {repoName || "Loading..."}
+              </h1>
+              <p className="text-[#7d8590] text-sm">Preview environments and test results</p>
+            </div>
+            
+            {/* Right Side Buttons */}
+            <div className="flex flex-col items-end gap-8">
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center gap-2 text-[#58a6ff] hover:text-[#79c0ff] text-sm font-medium transition-colors duration-200 px-3 py-1 rounded-full hover:bg-[#58a6ff]/10"
+              >
+                <FiArrowLeft size={16} />
+                Back
+              </button>
+              <button
+                onClick={openModal}
+                className="inline-flex items-center gap-2 bg-[#238636] hover:bg-[#2ea043] text-white px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#238636] focus:ring-offset-2 focus:ring-offset-[#0d1117] shadow-lg hover:shadow-xl"
+              >
+                <FiPlusCircle size={16} /> Create Preview
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                      <div className="bg-[#161b22]/80 rounded-xl border border-[#30363d] p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Total Previews</p>
-                  <p className="text-white text-2xl font-bold">{previews.length}</p>
-                </div>
-                <FiFileText className="text-blue-400 w-8 h-8" />
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-xl px-6 py-4 shadow-sm">
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[#f0f6fc] text-lg font-semibold mb-1">{previews.length}</p>
+              <div className="flex items-center gap-2">
+                <FiFileText className="text-[#58a6ff] w-4 h-4" />
+                <p className="text-[#7d8590] text-xs font-medium">Total</p>
               </div>
             </div>
-            <div className="bg-[#161b22]/80 rounded-xl border border-[#30363d] p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Successful</p>
-                  <p className="text-green-400 text-2xl font-bold">{getSuccessCount()}</p>
-                </div>
-                <FiCheckCircle className="text-green-400 w-8 h-8" />
+          </div>
+          <div className="bg-[#161b22] border border-[#30363d] rounded-xl px-6 py-4 shadow-sm">
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[#f0f6fc] text-lg font-semibold mb-1">{getSuccessCount()}</p>
+              <div className="flex items-center gap-2">
+                <FiCheckCircle className="text-[#3fb950] w-4 h-4" />
+                <p className="text-[#7d8590] text-xs font-medium">Success</p>
               </div>
             </div>
-            <div className="bg-[#161b22]/80 rounded-xl border border-[#30363d] p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Failed</p>
-                  <p className="text-red-400 text-2xl font-bold">{getFailedCount()}</p>
-                </div>
-                <FiXCircle className="text-red-400 w-8 h-8" />
+          </div>
+          <div className="bg-[#161b22] border border-[#30363d] rounded-xl px-6 py-4 shadow-sm">
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[#f0f6fc] text-lg font-semibold mb-1">{getFailedCount()}</p>
+              <div className="flex items-center gap-2">
+                <FiXCircle className="text-[#f85149] w-4 h-4" />
+                <p className="text-[#7d8590] text-xs font-medium">Failed</p>
               </div>
             </div>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="bg-[#161b22]/80 rounded-2xl shadow-2xl border border-[#30363d] overflow-hidden backdrop-blur-md">
-          <div className="bg-[#21262d]/90 px-8 py-5 border-b border-[#30363d] flex items-center">
-            <h2 className="text-2xl font-semibold text-white tracking-wide">Previews</h2>
+        <div className="bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden shadow-lg">
+          <div className="bg-[#21262d] px-6 py-4 border-b border-[#30363d] flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#f0f6fc]">Preview Environments</h2>
+            <span className="inline-flex items-center px-6 py-4 rounded-full text-base font-medium bg-[#238636] text-white border-4 border-[#238636]">
+              {previews.length} active
+            </span>
           </div>
 
-          <div className="divide-y divide-[#30363d]">
-            {previews.map((preview, idx) => (
-              <React.Fragment key={idx}>
-                <div
-                  className="group flex items-center justify-between px-8 py-5 hover:bg-[#21262d]/80 transition-all duration-200 cursor-pointer"
+                      <div className="divide-y divide-[#30363d]">
+              {previews.map((preview, idx) => (
+                <React.Fragment key={idx}>
+                  <div
+                    className="group flex items-center justify-between px-6 py-4 hover:bg-[#21262d] transition-colors duration-200 cursor-pointer"
                   onClick={() => {
                     // PR numarasını preview objesinden al
                     const prNumber = preview.prNumber;
@@ -184,15 +208,14 @@ function PreviewsPage() {
                     }
                   }}
                 >
-                  <div className="flex items-center space-x-5 flex-1 min-w-0">
-                    <div className="flex-shrink-0">
-                      <FiFileText className="text-blue-400 w-7 h-7" />
-                    </div>
+                  <div className="flex items-center space-x-4 flex-1 min-w-0">
                     <div className="flex-1 min-w-0">
-                      <div className="text-blue-400 hover:text-green-400 truncate text-lg font-medium transition-colors duration-200">
+                      <div className="text-[#f0f6fc] truncate text-sm font-medium">
                         {preview.previewName}
                       </div>
-                      <div className="text-gray-400 text-sm mt-1">Click to view test results</div>
+                      <div className="text-[#7d8590] text-xs mt-1">
+                        PR #{preview.prNumber} • Click to view test results
+                      </div>
                     </div>
                   </div>
                   <button
@@ -200,20 +223,32 @@ function PreviewsPage() {
                       e.stopPropagation();
                       handleDelete(idx);
                     }}
-                    className="ml-6 flex items-center gap-1 text-red-400 hover:text-white px-4 py-2 rounded-xl transition-all duration-200 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 text-base font-semibold"
+                    disabled={deletingPreviews[preview.prNumber]}
+                    className={`${
+                      deletingPreviews[preview.prNumber]
+                        ? 'text-[#7d8590] cursor-not-allowed'
+                        : 'text-[#f85149] hover:text-[#ff6b6b] opacity-0 group-hover:opacity-100'
+                    } transition-all duration-200`}
                   >
-                    <FiTrash2 size={18} /> Delete
+                    {deletingPreviews[preview.prNumber] ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-xs">Deleting...</span>
+                      </div>
+                    ) : (
+                      <FiTrash2 size={16} />
+                    )}
                   </button>
                 </div>
                 
                 {/* Test Results Section */}
                 <div 
                   id={`test-result-${idx}`} 
-                  className="px-8 py-6 bg-[#0d1117] border-t border-[#30363d] hidden"
+                  className="px-6 py-4 bg-[#21262d] border-t border-[#30363d] hidden"
                   style={{ display: 'none' }}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-white font-semibold text-lg">Test Results</h4>
+                    <h4 className="text-[#f0f6fc] font-medium text-sm">Test Results PR #{preview.prNumber}</h4>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -222,63 +257,65 @@ function PreviewsPage() {
                           fetchTestResult(prNumber);
                         }
                       }}
-                      className="text-blue-400 hover:text-blue-300 transition-colors duration-200 p-2 rounded-lg hover:bg-blue-500/10"
+                      className="text-[#58a6ff] hover:text-[#79c0ff] transition-colors duration-200"
                     >
-                      <FiRefreshCw className="w-5 h-5" />
+                      <FiRefreshCw className="w-4 h-4" />
                     </button>
                   </div>
                   
-                  <div className="space-y-3">
-                    {/* Test Status */}
-                    <div className="flex items-center justify-between p-3 bg-[#161b22] rounded-lg border border-[#30363d]">
-                      <span className="text-gray-300 text-sm">Test Status:</span>
-                      <span className="text-green-400 font-semibold">Successful</span>
-                    </div>
+                                      <div className="space-y-3">
+                      {/* Test Status */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7d8590] text-xs">Test Status:</span>
+                        <span className="text-[#3fb950] font-medium text-xs">Successful</span>
+                      </div>
 
-                    {/* PR Number */}
-                    <div className="flex items-center justify-between p-3 bg-[#161b22] rounded-lg border border-[#30363d]">
-                      <span className="text-gray-300 text-sm">PR Number:</span>
-                      <span className="text-gray-400 font-mono">#{preview.prNumber}</span>
-                    </div>
+                      {/* PR Number */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7d8590] text-xs">PR Number:</span>
+                        <span className="text-[#f0f6fc] font-mono text-xs">#{preview.prNumber}</span>
+                      </div>
 
-                    {/* Test Result */}
-                    <div className="flex items-center justify-between p-3 bg-[#161b22] rounded-lg border border-[#30363d]">
-                      <span className="text-gray-300 text-sm">Test Result:</span>
-                      <span className="text-gray-400 text-sm">Test completed successfully</span>
-                    </div>
+                      {/* Test Result */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7d8590] text-xs">Test Result:</span>
+                        <span className="text-[#f0f6fc] text-xs">Test completed successfully</span>
+                      </div>
 
-                    {/* Test Time */}
-                    <div className="flex items-center justify-between p-3 bg-[#161b22] rounded-lg border border-[#30363d]">
-                      <span className="text-gray-300 text-sm">Test Time:</span>
-                      <span className="text-gray-400 text-sm">
-                        {new Date().toLocaleString('en-US')}
-                      </span>
-                    </div>
-
-                    {/* HTTP Code (if available) */}
-                    {preview.testDetails?.httpCode && (
-                      <div className="flex items-center justify-between p-3 bg-[#161b22] rounded-lg border border-[#30363d]">
-                        <span className="text-gray-300 text-sm">HTTP Code:</span>
-                        <span className={`font-mono text-sm ${
-                          preview.testDetails.httpCode >= 200 && preview.testDetails.httpCode < 400 
-                            ? 'text-green-400' 
-                            : 'text-red-400'
-                        }`}>
-                          {preview.testDetails.httpCode}
+                      {/* Test Time */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7d8590] text-xs">Test Time:</span>
+                        <span className="text-[#f0f6fc] text-xs">
+                          {new Date().toLocaleString('en-US')}
                         </span>
                       </div>
-                    )}
-                  </div>
+
+                      {/* HTTP Code (if available) */}
+                      {preview.testDetails?.httpCode && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#7d8590] text-xs">HTTP Code:</span>
+                          <span className={`font-mono text-xs ${
+                            preview.testDetails.httpCode >= 200 && preview.testDetails.httpCode < 400 
+                              ? 'text-[#3fb950]' 
+                              : 'text-[#f85149]'
+                          }`}>
+                            {preview.testDetails.httpCode}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                 </div>
               </React.Fragment>
             ))}
-            {previews.length === 0 && (
-              <div className="px-8 py-20 text-center flex flex-col items-center justify-center animate-fade-in">
-                <FiFileText className="w-16 h-16 text-gray-500 animate-bounce mb-6" />
-                <p className="text-gray-400 text-2xl font-semibold">No previews available</p>
-                <p className="text-gray-500 text-base mt-2">Click <span className="text-blue-400 font-bold">"Create"</span> to add your first preview</p>
-              </div>
-            )}
+                          {previews.length === 0 && (
+                <div className="px-8 py-16 text-center flex flex-col items-center justify-center">
+                  <div className="bg-[#21262d] p-4 rounded-lg mb-4">
+                    <FiFileText className="w-8 h-8 text-[#7d8590]" />
+                  </div>
+                  <p className="text-[#f0f6fc] text-lg font-medium mb-2">No previews available</p>
+                  <p className="text-[#7d8590] text-sm">Click <span className="text-[#58a6ff] font-medium">"Create Preview"</span> to add your first preview environment</p>
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -293,3 +330,5 @@ function PreviewsPage() {
 }
 
 export default PreviewsPage;
+
+

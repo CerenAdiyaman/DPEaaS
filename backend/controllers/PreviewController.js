@@ -24,24 +24,40 @@ exports.createPreview = async (req, res) => {
         // Create Kubernetes resources
         const k8sResponse = await KubernetesService.createPreview(repoDetails, prNumber);
         
-        res.json(k8sResponse);
+
+        
+        res.json({
+            ...k8sResponse,
+            serviceUrl: k8sResponse.serviceUrl,
+            serviceTestResult: k8sResponse.serviceTestResult
+        });
     } catch (error) {
         console.error('Error creating preview:', error);
         res.status(500).json({ error: 'Failed to create preview' });
     }
-    }
+}
 
 exports.deletePreview = async (req, res) => {
     try {
         const { prNumber } = req.body;
-        console.log("Deleting preview for PR:", prNumber);
+        console.log("🗑️ Deleting preview for PR:", prNumber);
         
         // Delete Kubernetes resources
         const k8sResponse = await KubernetesService.deletePreview(prNumber);
         
-        res.json(k8sResponse);
+        console.log(`✅ Preview deletion completed for PR ${prNumber}`);
+        console.log(`🗂️ Deleted namespaces: ${k8sResponse.resources.namespaces.join(', ')}`);
+        console.log(`🐳 Docker images: ${k8sResponse.resources.dockerImages}`);
+        console.log(`⏰ Deleted at: ${k8sResponse.deletedAt}`);
+        
+        res.json({
+            ...k8sResponse,
+            message: `Preview başarıyla silindi (PR #${prNumber})`,
+            deletedAt: k8sResponse.deletedAt
+        });
     } catch (error) {
-        console.error('Error deleting preview:', error);
-        res.status(500).json({ error: 'Failed to delete preview' });
+        console.error('❌ Error deleting preview:', error);
+        res.status(500).json({ error: 'Preview silinirken hata oluştu' });
     }
 }
+

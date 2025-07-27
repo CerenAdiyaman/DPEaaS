@@ -40,15 +40,15 @@ exports.createPreview = async (req, res) => {
 exports.deletePreview = async (req, res) => {
     try {
         const { prNumber } = req.body;
-        console.log("🗑️ Deleting preview for PR:", prNumber);
+        console.log(" Deleting preview for PR:", prNumber);
         
         // Delete Kubernetes resources
         const k8sResponse = await KubernetesService.deletePreview(prNumber);
         
-        console.log(`✅ Preview deletion completed for PR ${prNumber}`);
-        console.log(`🗂️ Deleted namespaces: ${k8sResponse.resources.namespaces.join(', ')}`);
-        console.log(`🐳 Docker images: ${k8sResponse.resources.dockerImages}`);
-        console.log(`⏰ Deleted at: ${k8sResponse.deletedAt}`);
+        console.log(` Preview deletion completed for PR ${prNumber}`);
+        console.log(` Deleted namespaces: ${k8sResponse.resources.namespaces.join(', ')}`);
+        console.log(` Docker images: ${k8sResponse.resources.dockerImages}`);
+        console.log(` Deleted at: ${k8sResponse.deletedAt}`);
         
         res.json({
             ...k8sResponse,
@@ -56,8 +56,27 @@ exports.deletePreview = async (req, res) => {
             deletedAt: k8sResponse.deletedAt
         });
     } catch (error) {
-        console.error('❌ Error deleting preview:', error);
+        console.error(' Error deleting preview:', error);
         res.status(500).json({ error: 'Preview silinirken hata oluştu' });
+    }
+}
+
+exports.getTestResults = async (req, res) => {
+    try {
+        const { prNumber } = req.params;
+        console.log("Getting test results for PR:", prNumber);
+        
+        // Bu fonksiyon test sonuçlarını döndürmek için kullanılabilir
+        // Şimdilik basit bir response döndürüyoruz
+        res.json({
+            status: 'success',
+            prNumber: parseInt(prNumber),
+            testResult: 'Test completed successfully',
+            testedAt: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error getting test results:', error);
+        res.status(500).json({ error: 'Test sonuçları alınırken hata oluştu' });
     }
 }
 

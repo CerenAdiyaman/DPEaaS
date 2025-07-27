@@ -4,6 +4,7 @@ const util = require('util');
 const execAsync = util.promisify(exec);
 const path = require('path');
 const mustache = require('mustache');
+const { executionAsyncResource } = require('async_hooks');
 
 // @brief Function to calculate dynamic port based on PR number
 // @param {number} prNumber - Pull request number
@@ -61,22 +62,70 @@ function loadYamlTemplate(templateName, data) {
 // @param {Object} repoDetails - Details of the repository
 // @returns {boolean} - True if frontend directory exists, false otherwise
 function hasFrontend(repoDetails) {
-    const frontendPath = path.join(__dirname, '..', 'repos', repoDetails.repository.replace('/', '-'), 'frontend');
-    console.log('Checking frontend path:', frontendPath);
-    const exists = fs.existsSync(frontendPath);
-    console.log('Frontend exists:', exists);
-    return exists;
+    const repoPath = path.join(__dirname, '..', 'repos', repoDetails.repository.replace('/', '-'));
+    console.log('Checking frontend in repo path:', repoPath);
+    
+    // Direkt frontend klasörü kontrolü
+    const directFrontendPath = path.join(repoPath, 'frontend');
+    if (fs.existsSync(directFrontendPath)) {
+        console.log('Direct frontend path exists:', directFrontendPath);
+        return true;
+    }
+    
+    // Alt klasörlerde frontend arama
+    try {
+        const items = fs.readdirSync(repoPath);
+        for (const item of items) {
+            const itemPath = path.join(repoPath, item);
+            if (fs.statSync(itemPath).isDirectory()) {
+                const nestedFrontendPath = path.join(itemPath, 'frontend');
+                if (fs.existsSync(nestedFrontendPath)) {
+                    console.log('Nested frontend path found:', nestedFrontendPath);
+                    return true;
+                }
+            }
+        }
+    } catch (error) {
+        console.log('Error reading directory:', error.message);
+    }
+    
+    console.log('Frontend not found');
+    return false;
 }
 
 // @brief Function to check if the repository has a backend directory
 // @param {Object} repoDetails - Details of the repository
 // @returns {boolean} - True if backend directory exists, false otherwise
 function hasBackend(repoDetails) {
-    const backendPath = path.join(__dirname, '..', 'repos', repoDetails.repository.replace('/', '-'), 'backend');
-    console.log('Checking backend path:', backendPath);
-    const exists = fs.existsSync(backendPath);
-    console.log('Backend exists:', exists);
-    return exists;
+    const repoPath = path.join(__dirname, '..', 'repos', repoDetails.repository.replace('/', '-'));
+    console.log('Checking backend in repo path:', repoPath);
+    
+    // Direkt backend klasörü kontrolü
+    const directBackendPath = path.join(repoPath, 'backend');
+    if (fs.existsSync(directBackendPath)) {
+        console.log('Direct backend path exists:', directBackendPath);
+        return true;
+    }
+    
+    // Alt klasörlerde backend arama
+    try {
+        const items = fs.readdirSync(repoPath);
+        for (const item of items) {
+            const itemPath = path.join(repoPath, item);
+            if (fs.statSync(itemPath).isDirectory()) {
+                const nestedBackendPath = path.join(itemPath, 'backend');
+                if (fs.existsSync(nestedBackendPath)) {
+                    console.log('Nested backend path found:', nestedBackendPath);
+                    return true;
+                }
+            }
+        }
+    } catch (error) {
+        console.log('Error reading directory:', error.message);
+    }
+    
+    console.log('Backend not found');
+    return false;
 }
 
 // @brief Function to build and push a Docker image for frontend or backend and control if docker-compose is used, if used it will build the image using docker-compose
@@ -85,23 +134,119 @@ function hasBackend(repoDetails) {
 // @param {string} type - Type of the application ('frontend' or 'backend')
 // @returns {Promise} - Promise that resolves when the image is built and pushed
 function buildAndPushDockerImage(repoDetails, prNumber, type) {
+    const repoPath = path.join(__dirname, '..', 'repos', repoDetails.repository.replace('/', '-'));
     const folder = type === 'frontend' ? 'frontend' : 'backend';
-    const context = path.join(__dirname, '..', 'repos', repoDetails.repository.replace('/', '-'), folder);
+    
+    // Nested docker-compose.yml dosyalarını ara
+    let composeContext = null;
+    try {
+        const items = fs.readdirSync(repoPath);
+        for (const item of items) {
+            const itemPath = path.join(repoPath, item);
+            if (fs.statSync(itemPath).isDirectory()) {
+                const nestedComposePath = path.join(itemPath, 'docker-compose.yml');
+                if (fs.existsSync(nestedComposePath)) {
+                    composeContext = itemPath;
+                    console.log(`Found docker-compose.yml in nested directory: ${composeContext}`);
+                    break;
+                }
+            }
+        }
+    } catch (error) {
+        console.log('Error searching for nested docker-compose files:', error.message);
+    }
+    
+    // Eğer nested docker-compose.yml bulunduysa, onu kullan
+    if (composeContext) {
+        const composePath = path.join(composeContext, 'docker-compose.yml');
+        const image = `cerenadiyaman/${repoDetails.repository.replace('/', '-').toLowerCase()}-${type}:pr-${prNumber}`;
+        const serviceName = type;
+        
+        console.log(`Using nested docker-compose.yml for ${type} build`);
+        
+        // Docker-compose ile build et - docker-compose.yml dosyası zaten doğru context'i belirliyor
+        return execAsync(`docker-compose -f ${composePath} build ${serviceName}`, { cwd: composeContext })
+            .then(() => {
+                console.log(`Tagging ${serviceName} as ${image}`);
+                return execAsync(`docker tag ${serviceName} ${image}`);
+            })
+            .then(() => {
+                console.log(`Pushing ${image}`);
+                return execAsync(`docker push ${image}`);
+            })
+            .then(() => {
+                console.log(`Nested docker-compose ${type} image built and pushed successfully: ${image}`);
+            })
+            .catch((error) => {
+                console.error(`Error in nested docker-compose build/push for ${type}:`, error);
+                throw error;
+            });
+    }
+    
+    // Direkt klasör kontrolü
+    let context = path.join(repoPath, folder);
+    
+    // Eğer direkt klasör yoksa, nested klasörlerde ara
+    if (!fs.existsSync(context)) {
+        try {
+            const items = fs.readdirSync(repoPath);
+            for (const item of items) {
+                const itemPath = path.join(repoPath, item);
+                if (fs.statSync(itemPath).isDirectory()) {
+                    const nestedPath = path.join(itemPath, folder);
+                    if (fs.existsSync(nestedPath)) {
+                        // Eğer Dockerfile backend/ klasörünü arıyorsa, context'i bir üst seviyeye çıkar
+                        const dockerfilePath = path.join(nestedPath, 'Dockerfile');
+                        if (fs.existsSync(dockerfilePath)) {
+                            const dockerfileContent = fs.readFileSync(dockerfilePath, 'utf8');
+                            if (dockerfileContent.includes('COPY backend/')) {
+                                context = itemPath; // Bir üst seviye
+                                console.log(`Found ${type} in nested directory with backend/ reference, using parent context:`, context);
+                            } else {
+                                context = nestedPath;
+                                console.log(`Found ${type} in nested directory:`, context);
+                            }
+                        } else {
+                            context = nestedPath;
+                            console.log(`Found ${type} in nested directory:`, context);
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Error searching for nested directories:', error.message);
+        }
+    }
+    
     const image = `cerenadiyaman/${repoDetails.repository.replace('/', '-').toLowerCase()}-${type}:pr-${prNumber}`;
-
     const composePath = path.join(context, 'docker-compose.yml');
 
     console.log(`Building and pushing Docker image for ${type}:`, image);
+    console.log(`Build context:`, context);
 
     if (fs.existsSync(composePath)) {
         console.log(`docker-compose.yml detected for ${type}, using docker-compose to build.`);
         const serviceName = type; 
         const tagCmd = `docker tag ${serviceName} ${image}`;
-        return execAsync(`docker-compose -f ${composePath} build ${serviceName} && ${tagCmd} && docker push ${image}`, {
+        return execAsync(`docker-compose -f ${composePath} build ${serviceName} && ${tagCmd} && docker push ${image}`, execAsync('docker images load -i ${image}'), {
             cwd: context,
         });
     } else {
-        return execAsync(`docker build --platform linux/amd64 -t ${image} ${context} && docker push ${image}`);
+        console.log(`Building Docker image: ${image}`);
+        return execAsync(`docker build --platform linux/amd64 -t ${image} ${context}`)
+            .then(() => {
+                console.log(`Docker image built successfully: ${image}`);
+                console.log(`Pushing Docker image: ${image}`);
+                return execAsync(`docker push ${image}`);
+            })
+            .then(() => {
+                console.log(`Docker image pushed successfully: ${image}`);
+            })
+            .catch((error) => {
+                console.error(`Error in Docker build/push for ${type}:`, error);
+                throw error;
+            });
     }
 }
 
@@ -162,6 +307,16 @@ async function deployFrontend(namespace, hostname, repoDetails, prNumber, appNam
     await execAsync(`kubectl apply -f ${deploymentPath} --namespace=${namespace}`);
     await execAsync(`kubectl apply -f ${servicePath} --namespace=${namespace}`);
     await execAsync(`kubectl apply -f ${ingressPath} --namespace=${namespace}`);
+    
+    // Wait for deployment to be ready
+    console.log(`Waiting for frontend deployment to be ready...`);
+    try {
+        await execAsync(`kubectl wait --for=condition=available --timeout=300s deployment/${appName}-frontend -n ${namespace}`);
+        console.log(`Frontend deployment is ready!`);
+    } catch (error) {
+        console.warn(`Warning: Frontend deployment wait timeout or error:`, error.message);
+    }
+    
     //fs.unlinkSync(deploymentPath);
     //fs.unlinkSync(servicePath);
     //fs.unlinkSync(ingressPath);
@@ -209,6 +364,16 @@ async function deployBackend(namespace, hostname, repoDetails, prNumber, appName
     await execAsync(`kubectl apply -f ${deploymentPath} --namespace=${namespace}`);
     await execAsync(`kubectl apply -f ${servicePath} --namespace=${namespace}`);
     await execAsync(`kubectl apply -f ${ingressPath} --namespace=${namespace}`);
+    
+    // Wait for deployment to be ready
+    console.log(`Waiting for backend deployment to be ready...`);
+    try {
+        await execAsync(`kubectl wait --for=condition=available --timeout=300s deployment/${appName}-backend -n ${namespace}`);
+        console.log(`Backend deployment is ready!`);
+    } catch (error) {
+        console.warn(`Warning: Backend deployment wait timeout or error:`, error.message);
+    }
+    
     fs.unlinkSync(deploymentPath);
     fs.unlinkSync(servicePath);
     fs.unlinkSync(ingressPath);
@@ -274,10 +439,21 @@ async function deployGeneric(namespace, hostname, repoDetails, prNumber, appName
     await execAsync(`kubectl apply -f ${deploymentPath} --namespace=${namespace}`);
     await execAsync(`kubectl apply -f ${servicePath} --namespace=${namespace}`);
     await execAsync(`kubectl apply -f ${ingressPath} --namespace=${namespace}`);
+    
+    // Wait for deployment to be ready
+    console.log(`Waiting for generic deployment to be ready...`);
+    try {
+        await execAsync(`kubectl wait --for=condition=available --timeout=300s deployment/${appName} -n ${namespace}`);
+        console.log(`Generic deployment is ready!`);
+    } catch (error) {
+        console.warn(`Warning: Generic deployment wait timeout or error:`, error.message);
+    }
+    
     //fs.unlinkSync(deploymentPath);
     //fs.unlinkSync(servicePath);
     //fs.unlinkSync(ingressPath);
     console.log("Generic application deployed successfully for PR:", prNumber);
+    
 }
 
 // @brief Function to create a preview environment for a pull request
@@ -348,21 +524,27 @@ exports.createPreview = async (repoDetails, prNumber) => {
             serviceName = `${appName}-service`;
         }
 
+        // Open service in browser for generic deployments
+        if (!hasFrontendResult && !hasBackendResult) {
+            await execAsync(`minikube service ${serviceName} -n ${namespace}`);
+            console.log("open on web");
+            await execAsync(`kubectl port-forward service/${serviceName} 8080:80 -n ${namespace}`);
+        }
+
         // Get the actual service URL
         let actualUrl;
         try {
-            const { stdout } = await execAsync(`minikube service ${serviceName} -n ${namespace} --url`);
+            const stdout  = await execAsync(`minikube service ${serviceName} -n ${namespace}`);
             actualUrl = stdout.trim();
         } catch (error) {
             console.warn('Could not get service URL:', error.message);
-            actualUrl = `minikube service ${serviceName} -n ${namespace} --url`;
         }
 
         return{
             status: 'success',
             message: `Preview created for PR ${prNumber}`,
             url: actualUrl,
-            serviceUrl: `minikube service ${serviceName} -n ${namespace} --url`,
+            serviceUrl: actualUrl,
             resources: {
                 namespace,
                 deployment: `deployment-${prNumber}`,

@@ -20,4 +20,4 @@ spec:
             - name: REDIS_ENABLED
               value: "false"
           ports:
-            - containerPort: 3000
+            - containerPort: 8081

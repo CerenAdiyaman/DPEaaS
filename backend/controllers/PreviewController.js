@@ -65,9 +65,7 @@ exports.getTestResults = async (req, res) => {
     try {
         const { prNumber } = req.params;
         console.log("Getting test results for PR:", prNumber);
-        
-        // Bu fonksiyon test sonuçlarını döndürmek için kullanılabilir
-        // Şimdilik basit bir response döndürüyoruz
+
         res.json({
             status: 'success',
             prNumber: parseInt(prNumber),
